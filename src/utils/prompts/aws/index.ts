@@ -56,3 +56,36 @@ export const AWS_GENERATE_POLICIES_PROMPT = new ChatPromptTemplate({
   ],
   inputVariables: ['statements'],
 });
+
+
+export const AWS_GENERATE_POLICIES_PROMPT_FROM_SNIPPETS = new ChatPromptTemplate({
+  promptMessages: [
+    SystemMessagePromptTemplate.fromTemplate(
+      `
+      Given a code snippet, Identify all the AWS policy statements required for the code's execution and generate an array of AWS Policy Documents. 
+
+      1. Only include permissions necessary for the code's execution. 
+      2. Adhere to the principle of least privilege.
+      3. Ensure the identified policy statements are valid AWS IAM policy statements and only include permissions for existing AWS Services. Exclude permissions for services from other cloud providers such as Google Cloud Platform or Microsoft Azure.
+      4. Do not use wildcards.
+      5. If a resource is unknown, use a placeholder in the format "<AWS_RESOURCE_PLACEHOLDER>", where "AWS_RESOURCE" is the resource type.
+      6. If the same AWS SDK call targets different resources, create a new statement with a unique placeholder name by appending a number.
+      7. Choose the simplest solution if multiple exist.
+      8. Do not assume AWS service usage. If the code snippet doesn't explicitly indicate an AWS service's usage, return an object with an empty array.
+      9. If there are multiple actions of the exact same AWS service type, merge them into a single statement wihtout creating duplicate actions and resource.
+      10. If there are multiple statements with the exact same action, merge their resources into a single statement.
+      11. If there are multiple statements with the exact same resource, merge their actions into a single statement.
+      12. If a single statement includes multiple resources or actions, ensure that these are not duplicated within the statement. If there are duplicates, remove them.
+      13. For Id use "*Policy" and for Sid use "*Permissions", where "*" is the AWS service name.
+
+      The output should be an array of valid AWS Policy Documents, each in JSON format and adhering to AWS' JSON policy document syntax and structure.
+      `
+    ),
+    HumanMessagePromptTemplate.fromTemplate(`
+    <snippet>
+    {snippet}
+    </snippet>
+    `),
+  ],
+  inputVariables: ['snippet'],
+});
